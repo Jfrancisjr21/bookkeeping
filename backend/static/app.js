@@ -11,13 +11,33 @@ document.addEventListener("DOMContentLoaded", () => {
     if (e.key === "Enter") runSearch();
   });
 
-  document.querySelectorAll(".shelf-nav button").forEach(btn => {
+  document.getElementById("menu-btn").addEventListener("click", openSidebar);
+  document.getElementById("home-btn").addEventListener("click", goHome);
+  document.getElementById("sidebar-overlay").addEventListener("click", closeSidebar);
+  document.getElementById("sidebar-home-btn").addEventListener("click", goHome);
+
+  document.querySelectorAll(".sidebar nav button[data-tab]").forEach(btn => {
     btn.addEventListener("click", () => {
-      document.querySelectorAll(".shelf-nav button").forEach(b => b.classList.remove("active"));
+      document.querySelectorAll(".sidebar nav button[data-tab]").forEach(b => b.classList.remove("active"));
       btn.classList.add("active");
       activeTab = btn.dataset.tab;
       loadShelf();
+      closeSidebar();
     });
+  });
+
+  document.getElementById("modal-date-na").addEventListener("change", e => {
+    const dateInput = document.getElementById("modal-date-read");
+    if (e.target.checked) {
+      dateInput.value = "";
+      dateInput.disabled = true;
+    } else {
+      dateInput.disabled = false;
+    }
+  });
+
+  document.getElementById("modal-date-read").addEventListener("change", () => {
+    document.getElementById("modal-date-na").checked = false;
   });
 
   document.getElementById("modal-overlay").addEventListener("click", e => {
@@ -35,6 +55,21 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   });
 });
+
+// ── Sidebar ───────────────────────────────────────────────────
+function goHome() {
+  window.location.href = "/";
+}
+
+function openSidebar() {
+  document.getElementById("sidebar").classList.add("open");
+  document.getElementById("sidebar-overlay").classList.add("open");
+}
+
+function closeSidebar() {
+  document.getElementById("sidebar").classList.remove("open");
+  document.getElementById("sidebar-overlay").classList.remove("open");
+}
 
 // ── Search ────────────────────────────────────────────────────
 async function runSearch() {
@@ -160,7 +195,11 @@ function openModal(book) {
   document.getElementById("modal-author").textContent = book.author;
   document.getElementById("modal-status").value = book.status;
   document.getElementById("modal-notes").value = book.notes || "";
-  document.getElementById("modal-date-read").value = book.date_read || "";
+  const dateInput = document.getElementById("modal-date-read");
+  const dateNa = document.getElementById("modal-date-na");
+  dateInput.value = book.date_read || "";
+  dateInput.disabled = false;
+  dateNa.checked = false;
 
   const coverEl = document.getElementById("modal-cover");
   coverEl.innerHTML = "";
