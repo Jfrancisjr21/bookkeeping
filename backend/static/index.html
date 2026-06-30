@@ -30,113 +30,388 @@
 
     /* ── Header ─────────────────────────────────────── */
     header {
-      padding: 1.5rem 2rem 1.2rem;
       border-bottom: 1px solid rgba(255,255,255,0.06);
+      position: sticky;
+      top: 0;
+      background: var(--bg);
+      z-index: 50;
+    }
+    .header-top {
       display: flex;
       align-items: center;
       gap: 0.75rem;
+      padding: 1.2rem 2rem;
     }
-    header h1 {
+    .search-icon-btn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: var(--muted);
+      padding: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 6px;
+      transition: color .15s;
+    }
+    .search-icon-btn:hover, .search-icon-btn.active { color: var(--accent); }
+    .header-search {
+      display: none;
+      padding: 0 2rem 1rem;
+      border-top: 1px solid rgba(255,255,255,0.06);
+    }
+    .header-search.open { display: block; }
+    .header-search-bar {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      max-width: 560px;
+    }
+    .header-search-bar input {
+      flex: 1;
+      padding: 0.55rem 1rem;
+      border-radius: var(--radius);
+      border: 1px solid rgba(255,255,255,0.12);
+      background: var(--surface);
+      color: var(--text);
+      font-size: 0.9rem;
+      outline: none;
+      font-family: inherit;
+      transition: border-color .15s;
+    }
+    .header-search-bar input::placeholder { color: var(--muted); }
+    .header-search-bar input:focus { border-color: var(--accent); }
+    .header-search-close {
+      background: none;
+      border: none;
+      color: var(--muted);
+      cursor: pointer;
+      font-size: 1.1rem;
+      line-height: 1;
+      padding: 4px 6px;
+      transition: color .15s;
+    }
+    .header-search-close:hover { color: var(--text); }
+    .header-search-results {
+      margin-top: 0.75rem;
+      max-width: 560px;
+      max-height: 280px;
+      overflow-y: auto;
+      scrollbar-width: none;
+    }
+    .header-search-results::-webkit-scrollbar { display: none; }
+    .header-result-item {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.5rem;
+      border-radius: var(--radius);
+      transition: background .15s;
+    }
+    .header-result-item:hover { background: rgba(255,255,255,0.04); }
+    .header-result-cover {
+      width: 32px;
+      height: 48px;
+      border-radius: 4px;
+      flex-shrink: 0;
+      background: var(--surface2);
+      overflow: hidden;
+    }
+    .header-result-cover img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .header-result-info { flex: 1; min-width: 0; }
+    .header-result-title {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--text);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .header-result-author {
+      font-size: 0.75rem;
+      color: var(--muted);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .header-add-btn {
+      flex-shrink: 0;
+      padding: 0.28rem 0.65rem;
+      border-radius: 4px;
+      border: 1px solid var(--accent2);
+      background: transparent;
+      color: var(--accent);
+      font-size: 0.72rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background .15s, color .15s;
+      font-family: inherit;
+    }
+    .header-add-btn:hover { background: var(--accent2); color: #fff; }
+    .header-add-btn:disabled { opacity: 0.5; cursor: default; }
+    .header-search-hint { font-size: 0.82rem; color: var(--muted); padding: 0.5rem; }
+    .menu-btn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 4px 6px;
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      flex-shrink: 0;
+    }
+    .menu-btn span {
+      display: block;
+      width: 22px;
+      height: 2px;
+      background: var(--text);
+      border-radius: 2px;
+      transition: background .15s;
+    }
+    .menu-btn:hover span { background: var(--accent); }
+    .header-right {
+      margin-left: auto;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .user-menu {
+      position: relative;
+    }
+    .user-btn {
+      background: none;
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 50%;
+      width: 36px;
+      height: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      color: var(--muted);
+      transition: color .15s, border-color .15s, background .15s;
+    }
+    .user-btn:hover {
+      color: var(--accent);
+      border-color: var(--accent);
+      background: rgba(192,132,252,0.08);
+    }
+    .user-dropdown {
+      display: none;
+      position: absolute;
+      top: calc(100% + 8px);
+      right: 0;
+      background: var(--surface);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: var(--radius);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+      min-width: 140px;
+      z-index: 200;
+      overflow: hidden;
+    }
+    .user-dropdown.open { display: block; }
+    .dropdown-item {
+      display: block;
+      width: 100%;
+      padding: 0.75rem 1rem;
+      background: none;
+      border: none;
+      color: var(--muted);
+      font-size: 0.88rem;
+      text-align: left;
+      cursor: pointer;
+      font-family: inherit;
+      transition: color .15s, background .15s;
+    }
+    .dropdown-item:hover { color: #ff6b6b; background: rgba(255,107,107,0.06); }
+    .home-btn {
       font-size: 1.4rem;
       font-weight: 700;
       letter-spacing: 3px;
       text-transform: uppercase;
       color: var(--accent);
-    }
-
-    /* ── Search ─────────────────────────────────────── */
-    .search-section {
-      padding: 1.5rem 2rem 0;
-    }
-    .search-bar {
-      display: flex;
-      gap: 0.5rem;
-      max-width: 560px;
-    }
-    .search-bar input {
-      flex: 1;
-      padding: 0.65rem 1rem;
-      border-radius: var(--radius);
-      border: 1px solid rgba(255,255,255,0.12);
-      background: var(--surface);
-      color: var(--text);
-      font-size: 0.95rem;
-      outline: none;
-      transition: border-color .15s;
-    }
-    .search-bar input:focus { border-color: var(--accent); }
-    .search-bar input::placeholder { color: var(--muted); }
-    .search-bar button {
-      padding: 0.65rem 1.4rem;
-      border-radius: var(--radius);
-      border: none;
-      background: var(--accent2);
-      color: #fff;
-      font-size: 0.95rem;
-      font-weight: 600;
-      cursor: pointer;
-      transition: background .15s;
-    }
-    .search-bar button:hover { background: var(--accent); }
-
-    .search-results {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 1rem;
-      margin-top: 1.2rem;
-      min-height: 1rem;
-    }
-    .search-hint {
-      font-size: 0.82rem;
-      color: var(--muted);
-      padding: 0.5rem 0;
-    }
-
-    /* ── Shelf nav ──────────────────────────────────── */
-    .shelf-nav {
-      display: flex;
-      gap: 0;
-      padding: 0 2rem;
-      margin-top: 1.5rem;
-      border-bottom: 1px solid rgba(255,255,255,0.06);
-    }
-    .shelf-nav button {
-      padding: 0.8rem 1.4rem;
       background: none;
       border: none;
-      border-bottom: 2px solid transparent;
+      cursor: default;
+      padding: 0;
+      font-family: inherit;
+    }
+
+    /* ── Sidebar ─────────────────────────────────────── */
+    .sidebar-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.5);
+      z-index: 99;
+    }
+    .sidebar-overlay.open { display: block; }
+
+    .sidebar {
+      position: fixed;
+      top: 0; left: 0; bottom: 0;
+      width: 220px;
+      background: var(--surface);
+      z-index: 100;
+      transform: translateX(-100%);
+      transition: transform .25s ease;
+      display: flex;
+      flex-direction: column;
+      padding-top: 1rem;
+      box-shadow: 4px 0 24px rgba(0,0,0,0.4);
+    }
+    .sidebar.open { transform: translateX(0); }
+    .sidebar-header {
+      padding: 0.75rem 1.25rem 1.25rem;
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--muted);
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      margin-bottom: 0.5rem;
+    }
+    .sidebar nav button {
+      display: block;
+      width: 100%;
+      padding: 0.85rem 1.5rem;
+      background: none;
+      border: none;
+      border-left: 3px solid transparent;
       color: var(--muted);
       font-size: 0.9rem;
       font-weight: 500;
+      text-align: left;
       cursor: pointer;
-      transition: color .15s, border-color .15s;
+      transition: color .15s, border-color .15s, background .15s;
       font-family: inherit;
     }
-    .shelf-nav button:hover { color: var(--text); }
-    .shelf-nav button.active {
+    .sidebar nav button:hover {
+      color: var(--text);
+      background: rgba(255,255,255,0.04);
+    }
+    .sidebar nav button.active {
       color: var(--accent);
-      border-bottom-color: var(--accent);
+      border-left-color: var(--accent);
+      background: rgba(192,132,252,0.08);
+    }
+    .sidebar-divider {
+      height: 1px;
+      background: rgba(255,255,255,0.06);
+      margin: 0.5rem 0;
     }
 
-    /* ── Book grid ──────────────────────────────────── */
-    .book-grid {
+    /* ── Stats ───────────────────────────────────────── */
+    .stats-bar {
       display: flex;
-      flex-wrap: wrap;
-      gap: 1.5rem;
-      padding: 2rem;
+      gap: 1rem;
+      padding: 1.5rem 2rem;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
     }
-    .empty-state {
-      padding: 3rem 0;
+    .stat-card {
+      flex: 1;
+      background: var(--surface);
+      border-radius: var(--radius);
+      padding: 1rem 1.25rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+    }
+    .stat-number {
+      font-size: 2rem;
+      font-weight: 700;
+      color: var(--accent);
+      line-height: 1;
+    }
+    .stat-label {
+      font-size: 0.75rem;
       color: var(--muted);
-      font-size: 0.9rem;
-      width: 100%;
-      text-align: center;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
     }
 
-    /* ── Book card ──────────────────────────────────── */
+    /* ── Shelf rows ──────────────────────────────────── */
+    .shelf-section {
+      padding: 2rem 0 0.5rem;
+    }
+    .section-header {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      padding: 0 2rem 1rem;
+    }
+    .section-title {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--text);
+    }
+    .see-all {
+      font-size: 0.8rem;
+      color: var(--muted);
+      text-decoration: none;
+      transition: color .15s;
+    }
+    .see-all:hover { color: var(--accent); }
+
+    .row-wrapper {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+    .row-scroll {
+      display: flex;
+      gap: 1.25rem;
+      overflow-x: auto;
+      scroll-snap-type: x mandatory;
+      scrollbar-width: none;
+      padding: 0.5rem 2rem 1.5rem;
+      flex: 1;
+    }
+    .row-scroll::-webkit-scrollbar { display: none; }
+
+    .row-arrow {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-60%);
+      z-index: 10;
+      background: rgba(30,27,46,0.9);
+      border: 1px solid rgba(255,255,255,0.1);
+      color: var(--text);
+      font-size: 1.4rem;
+      line-height: 1;
+      width: 36px;
+      height: 64px;
+      border-radius: var(--radius);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background .15s, color .15s;
+      opacity: 0;
+      pointer-events: none;
+    }
+    .row-wrapper:hover .row-arrow {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .row-arrow:hover { background: var(--surface2); color: var(--accent); }
+    .row-arrow.left { left: 2px; }
+    .row-arrow.right { right: 2px; }
+
+    .row-empty {
+      color: var(--muted);
+      font-size: 0.88rem;
+      padding: 2rem 0;
+      white-space: nowrap;
+    }
+
+    /* ── Book cards ──────────────────────────────────── */
     .book-card {
       width: var(--card-w);
+      flex-shrink: 0;
       cursor: pointer;
+      scroll-snap-align: start;
       transition: transform .2s;
     }
     .book-card:hover { transform: translateY(-5px); }
@@ -148,7 +423,17 @@
       border-radius: var(--radius);
       overflow: hidden;
       box-shadow: var(--shadow);
+      position: relative;
+      cursor: pointer;
     }
+    .cover-wrap::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: rgba(0,0,0,0);
+      transition: background .2s;
+    }
+    .book-card:hover .cover-wrap::after { background: rgba(0,0,0,0.28); }
     .cover-img {
       width: 100%;
       height: 100%;
@@ -203,10 +488,7 @@
       color: #f5c518;
       letter-spacing: 1px;
     }
-
-    /* ── Search result cards ────────────────────────── */
-    .search-card { width: var(--card-w); }
-    .search-card .add-btn {
+    .add-btn {
       margin-top: 0.4rem;
       width: 100%;
       padding: 0.3rem 0;
@@ -218,11 +500,12 @@
       font-weight: 600;
       cursor: pointer;
       transition: background .15s, color .15s;
+      font-family: inherit;
     }
-    .search-card .add-btn:hover { background: var(--accent2); color: #fff; }
-    .search-card .add-btn:disabled { opacity: 0.5; cursor: default; }
+    .add-btn:hover { background: var(--accent2); color: #fff; }
+    .add-btn:disabled { opacity: 0.5; cursor: default; }
 
-    /* ── Modal ──────────────────────────────────────── */
+    /* ── Modal ───────────────────────────────────────── */
     .modal-overlay {
       display: none;
       position: fixed;
@@ -252,11 +535,7 @@
       overflow: hidden;
       box-shadow: var(--shadow);
     }
-    .modal-cover img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-    }
+    .modal-cover img { width: 100%; height: 100%; object-fit: cover; }
     .modal-cover-placeholder {
       width: 100%;
       height: 100%;
@@ -311,6 +590,20 @@
     .modal-body input[type=date]:focus { border-color: var(--accent); }
     .modal-body textarea { resize: vertical; min-height: 64px; }
 
+    .date-row { display: flex; align-items: center; gap: 0.75rem; }
+    .date-row input[type=date] { flex: 1; }
+    .na-label {
+      display: flex;
+      align-items: center;
+      gap: 0.3rem;
+      font-size: 0.82rem;
+      color: var(--muted);
+      cursor: pointer;
+      white-space: nowrap;
+      user-select: none;
+    }
+    .na-label input[type=checkbox] { cursor: pointer; accent-color: var(--accent); }
+
     .stars-row { display: flex; gap: 5px; margin-top: 0.3rem; }
     .star {
       font-size: 1.3rem;
@@ -322,12 +615,7 @@
     .star:hover, .star.lit { color: #f5c518; }
     .star:hover { transform: scale(1.15); }
 
-    .modal-actions {
-      display: flex;
-      gap: 0.5rem;
-      margin-top: 1.2rem;
-      flex-wrap: wrap;
-    }
+    .modal-actions { display: flex; gap: 0.5rem; margin-top: 1.2rem; flex-wrap: wrap; }
     .btn-save {
       padding: 0.45rem 1.1rem;
       border-radius: var(--radius);
@@ -364,29 +652,251 @@
       font-family: inherit;
     }
     .btn-close:hover { color: var(--text); }
+    /* ── Detail modal ───────────────────────────────── */
+    .detail-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.75);
+      z-index: 250;
+      align-items: center;
+      justify-content: center;
+    }
+    .detail-overlay.open { display: flex; }
+    .detail-modal {
+      background: var(--surface);
+      border-radius: 14px;
+      padding: 2rem;
+      max-width: 500px;
+      width: 92%;
+      display: flex;
+      gap: 1.75rem;
+      position: relative;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+    }
+    .detail-close {
+      position: absolute;
+      top: 1rem; right: 1rem;
+      background: none;
+      border: none;
+      color: var(--muted);
+      font-size: 1.1rem;
+      cursor: pointer;
+      line-height: 1;
+      transition: color .15s;
+    }
+    .detail-close:hover { color: var(--text); }
+    .detail-cover {
+      flex-shrink: 0;
+      width: 130px;
+      height: 195px;
+      border-radius: var(--radius);
+      overflow: hidden;
+      box-shadow: var(--shadow);
+      background: var(--surface2);
+    }
+    .detail-cover img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .detail-cover-ph {
+      width: 100%; height: 100%;
+      display: flex; align-items: center; justify-content: center;
+      padding: 0.75rem; text-align: center;
+      font-size: 0.72rem; color: var(--muted); line-height: 1.4;
+    }
+    .detail-info { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+    .detail-title {
+      font-size: 1.1rem; font-weight: 700; line-height: 1.3;
+      margin-bottom: 0.25rem; padding-right: 1.5rem;
+    }
+    .detail-author { font-size: 0.85rem; color: var(--muted); margin-bottom: 1rem; }
+    .detail-badge {
+      display: inline-block;
+      padding: 0.22rem 0.65rem;
+      border-radius: 20px;
+      background: rgba(192,132,252,0.15);
+      color: var(--accent);
+      font-size: 0.73rem;
+      font-weight: 600;
+      margin-bottom: 0.65rem;
+      width: fit-content;
+    }
+    .detail-stars { font-size: 1.05rem; color: #f5c518; letter-spacing: 1px; margin-bottom: 0.75rem; }
+    .detail-notes {
+      font-size: 0.82rem; color: var(--muted);
+      line-height: 1.5; font-style: italic;
+      margin-bottom: 1rem; flex: 1;
+    }
+    .detail-actions { display: flex; gap: 0.5rem; margin-top: auto; }
+
+    /* ── Status picker modal ────────────────────────── */
+    .status-modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.75);
+      z-index: 300;
+      align-items: center;
+      justify-content: center;
+    }
+    .status-modal-overlay.open { display: flex; }
+    .status-modal {
+      background: var(--surface);
+      border-radius: 14px;
+      padding: 1.75rem 1.5rem;
+      width: 92%;
+      max-width: 320px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+      text-align: center;
+    }
+    .status-modal-title { font-size: 1rem; font-weight: 700; margin-bottom: 0.35rem; }
+    .status-modal-book {
+      font-size: 0.8rem;
+      color: var(--muted);
+      margin-bottom: 1.4rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .status-options { display: flex; flex-direction: column; gap: 0.55rem; margin-bottom: 1rem; }
+    .status-opt {
+      width: 100%;
+      padding: 0.7rem;
+      border-radius: var(--radius);
+      border: 1px solid rgba(255,255,255,0.12);
+      background: none;
+      color: var(--text);
+      font-size: 0.88rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background .15s, border-color .15s, color .15s;
+      font-family: inherit;
+    }
+    .status-opt:hover { background: rgba(192,132,252,0.1); border-color: var(--accent); color: var(--accent); }
+    .status-cancel {
+      background: none;
+      border: none;
+      color: var(--muted);
+      font-size: 0.82rem;
+      cursor: pointer;
+      font-family: inherit;
+      transition: color .15s;
+      padding: 0.25rem 0.5rem;
+    }
+    .status-cancel:hover { color: var(--text); }
   </style>
 </head>
 <body>
 
+<div class="sidebar-overlay" id="sidebar-overlay"></div>
+<div class="sidebar" id="sidebar">
+  <div class="sidebar-header">Browse</div>
+  <nav>
+    <button data-tab="reading">Currently Reading</button>
+    <button data-tab="plan_to_read">Want to Read</button>
+    <button data-tab="read">Read</button>
+    <div class="sidebar-divider"></div>
+    <button id="sidebar-search-btn">Search &amp; Browse →</button>
+  </nav>
+</div>
+
 <header>
-  <h1>Bookkeeper</h1>
+  <div class="header-top">
+    <button class="menu-btn" id="menu-btn" aria-label="Open menu">
+      <span></span><span></span><span></span>
+    </button>
+    <span class="home-btn">Bookkeeper</span>
+    <div class="header-right">
+      <button class="search-icon-btn" id="search-icon-btn" aria-label="Search">
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+      </button>
+      <div class="user-menu" id="user-menu">
+        <button class="user-btn" id="user-btn" aria-label="User menu">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+            <circle cx="12" cy="8" r="4"/>
+            <path d="M12 14c-5.3 0-8 2.7-8 4v1h16v-1c0-1.3-2.7-4-8-4z"/>
+          </svg>
+        </button>
+        <div class="user-dropdown" id="user-dropdown">
+          <button class="dropdown-item" id="logout-btn">Log out</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="header-search" id="header-search">
+    <div class="header-search-bar">
+      <input type="text" id="header-search-input" placeholder="Search books by title or author…" autocomplete="off" />
+      <button class="header-search-close" id="header-search-close" aria-label="Close search">✕</button>
+    </div>
+    <div class="header-search-results" id="header-search-results"></div>
+  </div>
 </header>
 
-<section class="search-section">
-  <div class="search-bar">
-    <input id="search-input" type="text" placeholder="Search Open Library by title or author…" />
-    <button id="search-btn">Search</button>
+<div class="stats-bar">
+  <div class="stat-card">
+    <div class="stat-number" id="stat-reading">—</div>
+    <div class="stat-label">Currently Reading</div>
   </div>
-  <div class="search-results" id="search-results"></div>
+  <div class="stat-card">
+    <div class="stat-number" id="stat-want">—</div>
+    <div class="stat-label">Want to Read</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-number" id="stat-read">—</div>
+    <div class="stat-label">Books Read</div>
+  </div>
+</div>
+
+<!-- Currently Reading -->
+<section class="shelf-section" id="section-reading">
+  <div class="section-header">
+    <h2 class="section-title">Currently Reading</h2>
+    <a class="see-all" href="shelf.html">See all →</a>
+  </div>
+  <div class="row-wrapper">
+    <button class="row-arrow left" data-dir="-1">‹</button>
+    <div class="row-scroll" id="row-reading"></div>
+    <button class="row-arrow right" data-dir="1">›</button>
+  </div>
 </section>
 
-<nav class="shelf-nav">
-  <button class="active" data-tab="reading">Currently Reading</button>
-  <button data-tab="plan_to_read">Want to Read</button>
-  <button data-tab="read">Read</button>
-</nav>
+<!-- Suggested -->
+<section class="shelf-section" id="section-suggested">
+  <div class="section-header">
+    <h2 class="section-title">Suggested For You</h2>
+  </div>
+  <div class="row-wrapper">
+    <button class="row-arrow left" data-dir="-1">‹</button>
+    <div class="row-scroll" id="row-suggested"></div>
+    <button class="row-arrow right" data-dir="1">›</button>
+  </div>
+</section>
 
-<div class="book-grid" id="book-grid"></div>
+<!-- Want to Read -->
+<section class="shelf-section" id="section-want">
+  <div class="section-header">
+    <h2 class="section-title">Want to Read</h2>
+    <a class="see-all" href="shelf.html">See all →</a>
+  </div>
+  <div class="row-wrapper">
+    <button class="row-arrow left" data-dir="-1">‹</button>
+    <div class="row-scroll" id="row-want"></div>
+    <button class="row-arrow right" data-dir="1">›</button>
+  </div>
+</section>
+
+<!-- Read -->
+<section class="shelf-section" id="section-read">
+  <div class="section-header">
+    <h2 class="section-title">Read</h2>
+    <a class="see-all" href="shelf.html">See all →</a>
+  </div>
+  <div class="row-wrapper">
+    <button class="row-arrow left" data-dir="-1">‹</button>
+    <div class="row-scroll" id="row-read"></div>
+    <button class="row-arrow right" data-dir="1">›</button>
+  </div>
+</section>
 
 <!-- Detail modal -->
 <div class="modal-overlay" id="modal-overlay">
@@ -413,7 +923,10 @@
       </div>
 
       <label class="field-label">Date Read</label>
-      <input type="date" id="modal-date-read" />
+      <div class="date-row">
+        <input type="date" id="modal-date-read" />
+        <label class="na-label"><input type="checkbox" id="modal-date-na" /> N/A</label>
+      </div>
 
       <label class="field-label">Notes</label>
       <textarea id="modal-notes" rows="3"></textarea>
@@ -427,6 +940,36 @@
   </div>
 </div>
 
-<script src="app.js"></script>
+<div class="detail-overlay" id="detail-overlay">
+  <div class="detail-modal">
+    <button class="detail-close" id="detail-close">✕</button>
+    <div class="detail-cover" id="detail-cover"></div>
+    <div class="detail-info">
+      <div class="detail-title" id="detail-title"></div>
+      <div class="detail-author" id="detail-author"></div>
+      <div class="detail-badge" id="detail-badge"></div>
+      <div class="detail-stars" id="detail-stars"></div>
+      <div class="detail-notes" id="detail-notes"></div>
+      <div class="detail-actions">
+        <button class="btn-save" id="detail-edit-btn">Edit</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="status-modal-overlay" id="status-modal-overlay">
+  <div class="status-modal">
+    <div class="status-modal-title">Add to shelf</div>
+    <div class="status-modal-book" id="status-modal-book"></div>
+    <div class="status-options">
+      <button class="status-opt" data-status="reading">Currently Reading</button>
+      <button class="status-opt" data-status="plan_to_read">Want to Read</button>
+      <button class="status-opt" data-status="read">Already Read</button>
+    </div>
+    <button class="status-cancel" id="status-modal-cancel">Cancel</button>
+  </div>
+</div>
+
+<script src="home.js?v=7"></script>
 </body>
 </html>
