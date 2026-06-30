@@ -1,14 +1,26 @@
 services:
+  web:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql://bookkeeper:bookkeeper@db:5432/books
+      - SECRET_KEY=${SECRET_KEY}
+    depends_on:
+      - db
+    restart: unless-stopped
+
   db:
     image: postgres:16-alpine
     environment:
       POSTGRES_USER: bookkeeper
       POSTGRES_PASSWORD: bookkeeper
       POSTGRES_DB: books
-    ports:
-      - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
+    restart: unless-stopped
 
 volumes:
   pgdata:
