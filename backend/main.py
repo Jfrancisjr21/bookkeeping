@@ -1,12 +1,13 @@
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from database import engine, Base
-from routers import books, search
+from routers import books, search, auth
 
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="Bookkeeper")
 
+app.include_router(auth.router)
 app.include_router(books.router)
 app.include_router(search.router)
 

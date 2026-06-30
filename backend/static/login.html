@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Bookkeeper — Sign In</title>
+  <style>
+    :root {
+      --bg:      #13111a;
+      --surface: #1e1b2e;
+      --surface2:#2a2540;
+      --accent:  #c084fc;
+      --accent2: #a855f7;
+      --text:    #e8e3f0;
+      --muted:   #7c7a8e;
+      --radius:  8px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+    }
+
+    .auth-card {
+      background: var(--surface);
+      border-radius: 16px;
+      padding: 2.5rem 2rem;
+      width: 100%;
+      max-width: 380px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+    }
+
+    .brand {
+      font-size: 1.5rem;
+      font-weight: 700;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: var(--accent);
+      text-align: center;
+      margin-bottom: 0.4rem;
+    }
+
+    .brand-sub {
+      text-align: center;
+      font-size: 0.8rem;
+      color: var(--muted);
+      margin-bottom: 2rem;
+    }
+
+    .tab-bar {
+      display: flex;
+      background: var(--surface2);
+      border-radius: var(--radius);
+      padding: 3px;
+      margin-bottom: 1.75rem;
+    }
+
+    .tab-btn {
+      flex: 1;
+      padding: 0.5rem;
+      border: none;
+      border-radius: 6px;
+      background: none;
+      color: var(--muted);
+      font-size: 0.88rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background .15s, color .15s;
+      font-family: inherit;
+    }
+
+    .tab-btn.active {
+      background: var(--surface);
+      color: var(--text);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    }
+
+    .auth-form { display: flex; flex-direction: column; gap: 0.85rem; }
+    .auth-form[hidden] { display: none; }
+
+    .field-label {
+      display: block;
+      font-size: 0.72rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: var(--muted);
+      margin-bottom: 0.3rem;
+    }
+
+    .auth-form input {
+      width: 100%;
+      padding: 0.6rem 0.85rem;
+      border-radius: var(--radius);
+      border: 1px solid rgba(255,255,255,0.1);
+      background: var(--bg);
+      color: var(--text);
+      font-size: 0.9rem;
+      font-family: inherit;
+      outline: none;
+      transition: border-color .15s;
+    }
+
+    .auth-form input:focus { border-color: var(--accent); }
+    .auth-form input::placeholder { color: var(--muted); }
+
+    .error-msg {
+      font-size: 0.8rem;
+      color: #ff6b6b;
+      min-height: 1rem;
+      text-align: center;
+    }
+
+    .submit-btn {
+      width: 100%;
+      padding: 0.65rem;
+      border-radius: var(--radius);
+      border: none;
+      background: var(--accent2);
+      color: #fff;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background .15s;
+      font-family: inherit;
+      margin-top: 0.25rem;
+    }
+
+    .submit-btn:hover { background: var(--accent); }
+    .submit-btn:disabled { opacity: 0.6; cursor: default; }
+  </style>
+</head>
+<body>
+
+<div class="auth-card">
+  <div class="brand">Bookkeeper</div>
+  <div class="brand-sub">Track every book you read</div>
+
+  <div class="tab-bar">
+    <button class="tab-btn active" id="tab-login">Log In</button>
+    <button class="tab-btn" id="tab-signup">Sign Up</button>
+  </div>
+
+  <!-- Login form -->
+  <form class="auth-form" id="form-login">
+    <div>
+      <label class="field-label" for="login-email">Email</label>
+      <input type="email" id="login-email" placeholder="you@example.com" required />
+    </div>
+    <div>
+      <label class="field-label" for="login-password">Password</label>
+      <input type="password" id="login-password" placeholder="••••••••" required />
+    </div>
+    <div class="error-msg" id="login-error"></div>
+    <button class="submit-btn" type="submit" id="login-btn">Log In</button>
+  </form>
+
+  <!-- Sign up form -->
+  <form class="auth-form" id="form-signup" hidden>
+    <div>
+      <label class="field-label" for="signup-email">Email</label>
+      <input type="email" id="signup-email" placeholder="you@example.com" required />
+    </div>
+    <div>
+      <label class="field-label" for="signup-username">Username</label>
+      <input type="text" id="signup-username" placeholder="bookworm42" required />
+    </div>
+    <div>
+      <label class="field-label" for="signup-password">Password</label>
+      <input type="password" id="signup-password" placeholder="Min. 8 characters" required />
+    </div>
+    <div class="error-msg" id="signup-error"></div>
+    <button class="submit-btn" type="submit" id="signup-btn">Create Account</button>
+  </form>
+</div>
+
+<script>
+  if (localStorage.getItem('bk_token')) {
+    window.location.href = '/';
+  }
+
+  const tabLogin  = document.getElementById('tab-login');
+  const tabSignup = document.getElementById('tab-signup');
+  const formLogin  = document.getElementById('form-login');
+  const formSignup = document.getElementById('form-signup');
+
+  tabLogin.addEventListener('click', () => {
+    tabLogin.classList.add('active');
+    tabSignup.classList.remove('active');
+    formLogin.hidden = false;
+    formSignup.hidden = true;
+    document.getElementById('login-error').textContent = '';
+  });
+
+  tabSignup.addEventListener('click', () => {
+    tabSignup.classList.add('active');
+    tabLogin.classList.remove('active');
+    formSignup.hidden = false;
+    formLogin.hidden = true;
+    document.getElementById('signup-error').textContent = '';
+  });
+
+  formLogin.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = document.getElementById('login-btn');
+    const errEl = document.getElementById('login-error');
+    errEl.textContent = '';
+    btn.disabled = true;
+    btn.textContent = 'Logging in…';
+
+    const res = await fetch('/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email: document.getElementById('login-email').value,
+        password: document.getElementById('login-password').value,
+      }),
+    });
+
+    if (res.ok) {
+      const data = await res.json();
+      localStorage.setItem('bk_token', data.access_token);
+      window.location.href = '/';
+    } else {
+      const err = await res.json().catch(() => ({}));
+      errEl.textContent = err.detail || 'Login failed. Please try again.';
+      btn.disabled = false;
+      btn.textContent = 'Log In';
+    }
+  });
+
+  formSignup.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = document.getElementById('signup-btn');
+    const errEl = document.getElementById('signup-error');
+    errEl.textContent = '';
+    const password = document.getElementById('signup-password').value;
+    if (password.length < 8) {
+      errEl.textContent = 'Password must be at least 8 characters.';
+      return;
+    }
+    btn.disabled = true;
+    btn.textContent = 'Creating account…';
+
+    const res = await fetch('/auth/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email: document.getElementById('signup-email').value,
+        username: document.getElementById('signup-username').value,
+        password,
+      }),
+    });
+
+    if (res.ok) {
+      const data = await res.json();
+      localStorage.setItem('bk_token', data.access_token);
+      window.location.href = '/';
+    } else {
+      const err = await res.json().catch(() => ({}));
+      errEl.textContent = err.detail || 'Sign up failed. Please try again.';
+      btn.disabled = false;
+      btn.textContent = 'Create Account';
+    }
+  });
+</script>
+</body>
+</html>
