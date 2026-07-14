@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Bookkeeper — Sign In</title>
+  <link rel="icon" type="image/svg+xml" href="favicon.svg" />
   <style>
     :root {
       --bg:      #13111a;
@@ -187,6 +188,15 @@
     window.location.href = '/';
   }
 
+  function _extractError(err, fallback) {
+    if (!err || !err.detail) return fallback;
+    if (typeof err.detail === 'string') return err.detail;
+    if (Array.isArray(err.detail) && err.detail.length) {
+      return err.detail[0].msg || fallback;
+    }
+    return fallback;
+  }
+
   const tabLogin  = document.getElementById('tab-login');
   const tabSignup = document.getElementById('tab-signup');
   const formLogin  = document.getElementById('form-login');
@@ -228,10 +238,11 @@
     if (res.ok) {
       const data = await res.json();
       localStorage.setItem('bk_token', data.access_token);
+      localStorage.setItem('bk_username', data.user.username);
       window.location.href = '/';
     } else {
       const err = await res.json().catch(() => ({}));
-      errEl.textContent = err.detail || 'Login failed. Please try again.';
+      errEl.textContent = _extractError(err, 'Login failed. Please try again.');
       btn.disabled = false;
       btn.textContent = 'Log In';
     }
@@ -263,10 +274,11 @@
     if (res.ok) {
       const data = await res.json();
       localStorage.setItem('bk_token', data.access_token);
+      localStorage.setItem('bk_username', data.user.username);
       window.location.href = '/';
     } else {
       const err = await res.json().catch(() => ({}));
-      errEl.textContent = err.detail || 'Sign up failed. Please try again.';
+      errEl.textContent = _extractError(err, 'Sign up failed. Please try again.');
       btn.disabled = false;
       btn.textContent = 'Create Account';
     }

@@ -5,10 +5,15 @@ from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 import os
+from dotenv import load_dotenv
 from database import get_db
 from models import User
 
-SECRET_KEY = os.getenv("SECRET_KEY", "dev-secret-key-change-in-production")
+load_dotenv()
+
+SECRET_KEY = os.getenv("SECRET_KEY")
+if not SECRET_KEY:
+    raise RuntimeError("SECRET_KEY environment variable is not set")
 ALGORITHM = "HS256"
 TOKEN_EXPIRE_DAYS = 7
 

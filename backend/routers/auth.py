@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from database import get_db
 from models import User
 from schemas import UserCreate, LoginRequest, UserOut, Token
-from auth import hash_password, verify_password, create_token
+from auth import hash_password, verify_password, create_token, get_current_user
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -40,4 +40,13 @@ def login(payload: LoginRequest, db: Session = Depends(get_db)):
         access_token=create_token(user.id),
         token_type="bearer",
         user=UserOut.model_validate(user),
+    )
+
+
+@router.post("/refresh", response_model=Token)
+def refresh(current_user: User = Depends(get_current_user)):
+    return Token(
+        access_token=create_token(current_user.id),
+        token_type="bearer",
+        user=UserOut.model_validate(current_user),
     )

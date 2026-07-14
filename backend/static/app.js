@@ -1,30 +1,14 @@
 let activeTab = "reading";
-let currentBookId = null;
-let currentRating = null;
-let _pendingBook = null;
-let _pendingBtn = null;
-let _pendingBtnText = "";
+let _initialLoad = true;
+let _shelfBooks = [];
+let _sortBy = "default";
+let _yearFilter = "";
 
-function openStatusModal(bookData, btn) {
-  _pendingBook = bookData;
-  _pendingBtn = btn;
-  _pendingBtnText = btn ? btn.textContent : "";
-  document.getElementById("status-modal-book").textContent =
-    bookData.title + (bookData.author ? " · " + bookData.author : "");
-  document.getElementById("status-modal-overlay").classList.add("open");
-}
+document.addEventListener("DOMContentLoaded", async () => {
+  if (!await checkAuth()) return;
 
-function closeStatusModal() {
-  document.getElementById("status-modal-overlay").classList.remove("open");
-  _pendingBook = null; _pendingBtn = null; _pendingBtnText = "";
-}
-
-// ── Boot ──────────────────────────────────────────────────────
-document.addEventListener("DOMContentLoaded", () => {
-  if (!localStorage.getItem("bk_token")) {
-    window.location.href = "/login.html";
-    return;
-  }
+  const username = localStorage.getItem("bk_username");
+  if (username) document.getElementById("dropdown-username").textContent = username;
 
   document.getElementById("user-btn").addEventListener("click", (e) => {
     e.stopPropagation();
@@ -38,16 +22,15 @@ document.addEventListener("DOMContentLoaded", () => {
   });
   document.getElementById("logout-btn").addEventListener("click", () => {
     localStorage.removeItem("bk_token");
+    localStorage.removeItem("bk_username");
     window.location.href = "/login.html";
   });
 
-  // ── Detail modal ──────────────────────────────────────
-  document.getElementById("detail-overlay").addEventListener("click", e => {
-    if (e.target === e.currentTarget) closeDetailModal();
+  document.getElementById("book-detail-overlay").addEventListener("click", e => {
+    if (e.target === e.currentTarget) closeBookDetail();
   });
-  document.getElementById("detail-close").addEventListener("click", closeDetailModal);
+  document.getElementById("book-detail-close").addEventListener("click", closeBookDetail);
 
-  // ── Status picker modal ───────────────────────────────
   document.getElementById("status-modal-overlay").addEventListener("click", e => {
     if (e.target === e.currentTarget) closeStatusModal();
   });
@@ -76,27 +59,31 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   });
 
-  // ── Header search ─────────────────────────────────────
   function closeHeaderSearch() {
     document.getElementById("header-search").classList.remove("open");
     document.getElementById("search-icon-btn").classList.remove("active");
     document.getElementById("header-search-input").value = "";
     document.getElementById("header-search-results").innerHTML = "";
+    // shelf-filter retains the value — grid stays filtered, no jarring reset
   }
 
   document.getElementById("search-icon-btn").addEventListener("click", (e) => {
     e.stopPropagation();
     const open = document.getElementById("header-search").classList.toggle("open");
     document.getElementById("search-icon-btn").classList.toggle("active", open);
-    if (open) document.getElementById("header-search-input").focus();
-    else closeHeaderSearch();
+    if (open) {
+      const headerInput = document.getElementById("header-search-input");
+      headerInput.value = document.getElementById("shelf-filter").value;
+      headerInput.focus();
+    } else {
+      closeHeaderSearch();
+    }
   });
-
   document.getElementById("header-search-close").addEventListener("click", closeHeaderSearch);
-
   document.addEventListener("keydown", (e) => {
     if (e.key === "Escape") {
       closeHeaderSearch();
+      closeBookDetail();
       document.getElementById("user-dropdown").classList.remove("open");
     }
   });
@@ -104,13 +91,11 @@ document.addEventListener("DOMContentLoaded", () => {
   let headerSearchTimer;
   document.getElementById("header-search-input").addEventListener("input", () => {
     clearTimeout(headerSearchTimer);
-    const q = document.getElementById("header-search-input").value.trim();
-    if (!q) { document.getElementById("header-search-results").innerHTML = ""; return; }
-    document.getElementById("header-search-results").innerHTML = '<div class="header-search-hint">Searching…</div>';
-    headerSearchTimer = setTimeout(() => runHeaderSearch(q), 350);
+    const q = document.getElementById("header-search-input").value;
+    document.getElementById("header-search-results").innerHTML = "";
+    document.getElementById("shelf-filter").value = q;
+    headerSearchTimer = setTimeout(() => applyFilterAndSort(), 150);
   });
-
-  loadShelf();
 
   const urlTab = new URLSearchParams(window.location.search).get("tab");
   if (urlTab && ["reading", "plan_to_read", "read"].includes(urlTab)) {
@@ -120,9 +105,39 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  document.getElementById("search-btn").addEventListener("click", runSearch);
-  document.getElementById("search-input").addEventListener("keydown", e => {
-    if (e.key === "Enter") runSearch();
+  loadShelf();
+  initCalendar();
+
+  document.getElementById("year-filter").addEventListener("change", () => {
+    _yearFilter = document.getElementById("year-filter").value;
+    applyFilterAndSort();
+  });
+
+  document.getElementById("shelf-filter").addEventListener("input", () => {
+    const headerSearch = document.getElementById("header-search");
+    if (headerSearch.classList.contains("open")) {
+      document.getElementById("header-search-input").value = document.getElementById("shelf-filter").value;
+    }
+    applyFilterAndSort();
+  });
+
+  const sortIconBtn = document.getElementById("sort-icon-btn");
+  const sortDropdown = document.getElementById("sort-dropdown");
+  sortIconBtn.addEventListener("click", e => {
+    e.stopPropagation();
+    sortDropdown.classList.toggle("open");
+  });
+  document.addEventListener("click", e => {
+    if (!e.target.closest("#sort-picker")) sortDropdown.classList.remove("open");
+  });
+  document.querySelectorAll(".sort-opt").forEach(opt => {
+    opt.addEventListener("click", () => {
+      _sortBy = opt.dataset.sort;
+      document.querySelectorAll(".sort-opt").forEach(o => o.classList.toggle("active", o === opt));
+      sortIconBtn.classList.toggle("active", _sortBy !== "default");
+      sortDropdown.classList.remove("open");
+      applyFilterAndSort();
+    });
   });
 
   document.getElementById("menu-btn").addEventListener("click", openSidebar);
@@ -142,18 +157,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
   document.getElementById("modal-date-na").addEventListener("change", e => {
     const dateInput = document.getElementById("modal-date-read");
-    if (e.target.checked) {
-      dateInput.value = "";
-      dateInput.disabled = true;
-    } else {
-      dateInput.disabled = false;
-    }
+    if (e.target.checked) { dateInput.value = ""; dateInput.disabled = true; }
+    else { dateInput.disabled = false; }
   });
-
   document.getElementById("modal-date-read").addEventListener("change", () => {
     document.getElementById("modal-date-na").checked = false;
   });
-
   document.getElementById("modal-overlay").addEventListener("click", e => {
     if (e.target === e.currentTarget) closeModal();
   });
@@ -170,177 +179,113 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 });
 
-// ── Sidebar ───────────────────────────────────────────────────
+// ── Navigation ────────────────────────────────────────────────
 function goHome() {
   window.location.href = "/";
 }
 
-function openSidebar() {
-  document.getElementById("sidebar").classList.add("open");
-  document.getElementById("sidebar-overlay").classList.add("open");
-}
-
-function closeSidebar() {
-  document.getElementById("sidebar").classList.remove("open");
-  document.getElementById("sidebar-overlay").classList.remove("open");
-}
-
-// ── Search ────────────────────────────────────────────────────
-async function runSearch() {
-  const q = document.getElementById("search-input").value.trim();
-  if (!q) return;
-  const container = document.getElementById("search-results");
-  container.innerHTML = '<span class="search-hint">Searching…</span>';
-  const results = await apiFetch(`/search/?q=${encodeURIComponent(q)}&limit=12`);
-  container.innerHTML = "";
-  if (!results || !results.length) {
-    container.innerHTML = '<span class="search-hint">No results found.</span>';
-    return;
-  }
-  results.forEach(r => container.appendChild(makeSearchCard(r)));
-}
-
-function makeSearchCard(r) {
-  const card = document.createElement("div");
-  card.className = "search-card";
-
-  const coverWrap = document.createElement("div");
-  coverWrap.className = "cover-wrap";
-  coverWrap.appendChild(makeCoverEl(r.cover_url, r.title, r.author));
-
-  const meta = document.createElement("div");
-  meta.className = "card-meta";
-  meta.innerHTML = `<div class="card-title">${esc(r.title)}</div><div class="card-author">${esc(r.author || "Unknown")}</div>`;
-
-  const addBtn = document.createElement("button");
-  addBtn.className = "add-btn";
-  addBtn.textContent = "+ Add to shelf";
-  addBtn.addEventListener("click", () => addBook(r, addBtn));
-
-  card.append(coverWrap, meta, addBtn);
-  return card;
-}
-
-function addBook(bookData, btn) {
-  openStatusModal(bookData, btn);
-}
-
 // ── Shelf ─────────────────────────────────────────────────────
 async function loadShelf() {
+  document.getElementById("shelf-filter").value = "";
+  _sortBy = "default";
+  _yearFilter = "";
+  document.querySelectorAll(".sort-opt").forEach(o => o.classList.toggle("active", o.dataset.sort === "default"));
+  document.getElementById("sort-icon-btn").classList.remove("active");
   const grid = document.getElementById("book-grid");
   grid.innerHTML = "";
   const books = await apiFetch(`/books/?status=${activeTab}`);
-  if (!books || !books.length) {
-    grid.innerHTML = `<div class="empty-state">No books here yet — search and add some above.</div>`;
+  if (_initialLoad) {
+    _initialLoad = false;
+    document.getElementById("page-loader").classList.add("hidden");
+    document.getElementById("shelf-content").classList.remove("hidden");
+  }
+  _shelfBooks = books || [];
+  _updateYearFilter(_shelfBooks);
+  renderGrid(_shelfBooks, "");
+}
+
+function applyFilterAndSort() {
+  const q = document.getElementById("shelf-filter").value.trim().toLowerCase();
+  const filtered = _shelfBooks.filter(b => {
+    const matchText = !q || b.title.toLowerCase().includes(q) || (b.author || "").toLowerCase().includes(q);
+    const matchYear = !_yearFilter || (b.date_read && b.date_read.startsWith(_yearFilter));
+    return matchText && matchYear;
+  });
+  renderGrid(sortBooks(filtered), q);
+}
+
+function sortBooks(books) {
+  if (_sortBy === "default") return books;
+  const copy = [...books];
+  if (_sortBy === "title") {
+    copy.sort((a, b) => a.title.localeCompare(b.title));
+  } else if (_sortBy === "author") {
+    copy.sort((a, b) => (a.author || "").localeCompare(b.author || ""));
+  } else if (_sortBy === "rating") {
+    copy.sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0));
+  } else if (_sortBy === "date_read") {
+    copy.sort((a, b) => {
+      if (!a.date_read && !b.date_read) return 0;
+      if (!a.date_read) return 1;
+      if (!b.date_read) return -1;
+      return b.date_read.localeCompare(a.date_read);
+    });
+  }
+  return copy;
+}
+
+function _updateYearFilter(books) {
+  const sel = document.getElementById("year-filter");
+  if (activeTab !== "read") {
+    sel.hidden = true;
+    return;
+  }
+  const years = [...new Set(
+    books.filter(b => b.date_read).map(b => b.date_read.slice(0, 4))
+  )].sort().reverse();
+  sel.innerHTML = '<option value="">All years</option>';
+  years.forEach(y => {
+    const opt = document.createElement("option");
+    opt.value = y;
+    opt.textContent = y;
+    sel.appendChild(opt);
+  });
+  sel.hidden = years.length === 0;
+}
+
+function renderGrid(books, query) {
+  const grid = document.getElementById("book-grid");
+  grid.innerHTML = "";
+  if (!books.length) {
+    grid.innerHTML = query
+      ? `<div class="empty-state">No books match "${esc(query)}".</div>`
+      : `<div class="empty-state">No books here yet — browse and add some from the home page.</div>`;
     return;
   }
   books.forEach(book => grid.appendChild(makeBookCard(book)));
 }
 
-function makeBookCard(book) {
-  const card = document.createElement("div");
-  card.className = "book-card";
-
-  const coverWrap = document.createElement("div");
-  coverWrap.className = "cover-wrap";
-  coverWrap.appendChild(makeCoverEl(book.cover_url, book.title, book.author));
-
-  const meta = document.createElement("div");
-  meta.className = "card-meta";
-  const stars = book.rating ? "★".repeat(book.rating) + "☆".repeat(5 - book.rating) : "";
-  meta.innerHTML = `
-    <div class="card-title">${esc(book.title)}</div>
-    <div class="card-author">${esc(book.author)}</div>
-    ${stars ? `<div class="card-stars">${stars}</div>` : ""}
-  `;
-
-  card.append(coverWrap, meta);
-  card.addEventListener("click", () => openDetailModal(book));
-  return card;
-}
-
-function makeCoverEl(coverUrl, title, author) {
-  if (coverUrl) {
-    const img = document.createElement("img");
-    img.className = "cover-img";
-    img.src = coverUrl;
-    img.alt = title;
-    img.onerror = () => {
-      const ph = makePlaceholder(title, author);
-      img.replaceWith(ph);
-    };
-    return img;
-  }
-  return makePlaceholder(title, author);
-}
-
-function makePlaceholder(title, author) {
-  const div = document.createElement("div");
-  div.className = "cover-placeholder";
-  div.innerHTML = `<div class="ph-title">${esc(title)}</div><div class="ph-author">${esc(author || "")}</div>`;
-  return div;
-}
-
-// ── Modal ─────────────────────────────────────────────────────
-function openModal(book) {
-  currentBookId = book.id;
-  currentRating = book.rating || null;
-
-  document.getElementById("modal-title").textContent = book.title;
-  document.getElementById("modal-author").textContent = book.author;
-  document.getElementById("modal-status").value = book.status;
-  document.getElementById("modal-notes").value = book.notes || "";
-  const dateInput = document.getElementById("modal-date-read");
-  const dateNa = document.getElementById("modal-date-na");
-  dateInput.value = book.date_read || "";
-  dateInput.disabled = false;
-  dateNa.checked = false;
-
-  const coverEl = document.getElementById("modal-cover");
-  coverEl.innerHTML = "";
-  if (book.cover_url) {
-    const img = document.createElement("img");
-    img.src = book.cover_url;
-    img.alt = book.title;
-    img.onerror = () => {
-      img.replaceWith(makePlaceholderFull(book.title));
-    };
-    coverEl.appendChild(img);
-  } else {
-    coverEl.appendChild(makePlaceholderFull(book.title));
-  }
-
-  renderStars(currentRating);
-  document.getElementById("modal-overlay").classList.add("open");
-}
-
-function makePlaceholderFull(title) {
-  const div = document.createElement("div");
-  div.className = "modal-cover-placeholder";
-  div.textContent = title;
-  return div;
-}
-
-function closeModal() {
-  document.getElementById("modal-overlay").classList.remove("open");
-  currentBookId = null;
-}
-
-function renderStars(rating) {
-  document.querySelectorAll(".star").forEach(s => {
-    s.classList.toggle("lit", parseInt(s.dataset.v) <= (rating || 0));
-  });
-}
-
+// ── Save / delete (shelf reloads its grid) ────────────────────
 async function saveBook() {
   if (!currentBookId) return;
+  const titleVal = document.getElementById("modal-title").value.trim();
+  if (!titleVal) { showToast("Title can't be empty."); return; }
+  // ══ Reading Tracker (removable) ══
+  const pageInput = document.getElementById("tracker-current-page");
+  // ══ End Reading Tracker ══
+  const coverUrlInput = document.getElementById("modal-cover-url");
   const result = await apiFetch(`/books/${currentBookId}`, {
     method: "PATCH",
     body: JSON.stringify({
+      title: titleVal,
+      author: document.getElementById("modal-author").value.trim() || null,
+      cover_url: coverUrlInput ? (coverUrlInput.value.trim() || null) : undefined,
       status: document.getElementById("modal-status").value,
       rating: currentRating,
       notes: document.getElementById("modal-notes").value || null,
       date_read: document.getElementById("modal-date-read").value || null,
+      current_page: pageInput ? (parseInt(pageInput.value) || null) : undefined,
+      total_pages: _currentBookTotalPages || undefined,
     }),
   });
   if (result) { closeModal(); loadShelf(); }
@@ -352,108 +297,4 @@ async function deleteCurrentBook() {
   await apiFetch(`/books/${currentBookId}`, { method: "DELETE" });
   closeModal();
   loadShelf();
-}
-
-// ── Detail modal ──────────────────────────────────────────────
-const STATUS_LABELS = { reading: "Currently Reading", plan_to_read: "Want to Read", read: "Read" };
-
-function openDetailModal(book) {
-  const coverEl = document.getElementById("detail-cover");
-  coverEl.innerHTML = "";
-  if (book.cover_url) {
-    const img = document.createElement("img");
-    img.src = book.cover_url;
-    img.alt = book.title;
-    img.onerror = () => img.replaceWith(makeDetailPlaceholder(book.title));
-    coverEl.appendChild(img);
-  } else {
-    coverEl.appendChild(makeDetailPlaceholder(book.title));
-  }
-  document.getElementById("detail-title").textContent = book.title;
-  document.getElementById("detail-author").textContent = book.author;
-  document.getElementById("detail-badge").textContent = STATUS_LABELS[book.status] || book.status;
-  document.getElementById("detail-stars").textContent =
-    book.rating ? "★".repeat(book.rating) + "☆".repeat(5 - book.rating) : "";
-  const notesEl = document.getElementById("detail-notes");
-  notesEl.textContent = book.notes ? `"${book.notes}"` : "";
-  notesEl.style.display = book.notes ? "" : "none";
-  document.getElementById("detail-edit-btn").onclick = () => { closeDetailModal(); openModal(book); };
-  document.getElementById("detail-overlay").classList.add("open");
-}
-
-function closeDetailModal() {
-  document.getElementById("detail-overlay").classList.remove("open");
-}
-
-function makeDetailPlaceholder(title) {
-  const div = document.createElement("div");
-  div.className = "detail-cover-ph";
-  div.textContent = title;
-  return div;
-}
-
-// ── Header search ─────────────────────────────────────────────
-async function runHeaderSearch(q) {
-  const container = document.getElementById("header-search-results");
-  if (!container) return;
-  const results = await apiFetch(`/search/?q=${encodeURIComponent(q)}&limit=8`);
-  container.innerHTML = "";
-  if (!results || !results.length) {
-    container.innerHTML = '<div class="header-search-hint">No results found.</div>';
-    return;
-  }
-  results.forEach(r => {
-    const item = document.createElement("div");
-    item.className = "header-result-item";
-
-    const cover = document.createElement("div");
-    cover.className = "header-result-cover";
-    if (r.cover_url) {
-      const img = document.createElement("img");
-      img.src = r.cover_url;
-      img.alt = r.title;
-      cover.appendChild(img);
-    }
-
-    const info = document.createElement("div");
-    info.className = "header-result-info";
-    info.innerHTML = `<div class="header-result-title">${esc(r.title)}</div><div class="header-result-author">${esc(r.author || "Unknown")}</div>`;
-
-    const btn = document.createElement("button");
-    btn.className = "header-add-btn";
-    btn.textContent = "+ Add";
-    btn.addEventListener("click", () => openStatusModal(r, btn));
-
-    item.append(cover, info, btn);
-    container.appendChild(item);
-  });
-}
-
-// ── API ───────────────────────────────────────────────────────
-async function apiFetch(url, options = {}) {
-  const token = localStorage.getItem("bk_token");
-  const res = await fetch(url, {
-    ...options,
-    headers: {
-      "Content-Type": "application/json",
-      ...(token ? { "Authorization": `Bearer ${token}` } : {}),
-      ...(options.headers || {}),
-    },
-  });
-  if (res.status === 401) {
-    localStorage.removeItem("bk_token");
-    window.location.href = "/login.html";
-    return null;
-  }
-  if (!res.ok) { console.error("API", res.status, url); return null; }
-  if (res.status === 204) return null;
-  return res.json();
-}
-
-function esc(str) {
-  return String(str ?? "")
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
 }
