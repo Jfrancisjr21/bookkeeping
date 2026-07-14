@@ -1,8 +1,5 @@
 // ── Shared state ─────────────────────────────────────────────
 let currentBookId = null;
-let _calYear  = new Date().getFullYear();
-let _calMonth = new Date().getMonth() + 1; // 1-12
-let _calMarked = new Set();               // "YYYY-MM-DD" strings
 let currentRating = null;
 let _pendingBook = null;
 let _pendingBtn = null;
@@ -539,106 +536,6 @@ async function _loadJournalEntries(bookId) {
     `;
     list.appendChild(div);
   });
-}
-
-// ── Reading calendar ──────────────────────────────────────────
-const _MONTH_NAMES = ["January","February","March","April","May","June","July","August","September","October","November","December"];
-
-async function _loadCalendar() {
-  const data = await apiFetch(`/reading-log/?year=${_calYear}&month=${_calMonth}`);
-  _calMarked = new Set(data || []);
-  _renderCalendar();
-}
-
-function _renderCalendar() {
-  const grid  = document.getElementById("cal-grid");
-  const label = document.getElementById("cal-month-label");
-  const nextBtn = document.getElementById("cal-next");
-  if (!grid || !label) return;
-
-  label.textContent = `${_MONTH_NAMES[_calMonth - 1]} ${_calYear}`;
-
-  // Hide next button when already on current month
-  const now = new Date();
-  const isCurrent = _calYear === now.getFullYear() && _calMonth === now.getMonth() + 1;
-  if (nextBtn) nextBtn.hidden = isCurrent;
-
-  const todayStr     = now.toISOString().slice(0, 10);
-  const firstDayOfWeek = new Date(_calYear, _calMonth - 1, 1).getDay(); // 0=Sun
-  const daysInMonth    = new Date(_calYear, _calMonth, 0).getDate();
-
-  grid.innerHTML = "";
-
-  // Day-of-week headers
-  ["Su","Mo","Tu","We","Th","Fr","Sa"].forEach(d => {
-    const h = document.createElement("div");
-    h.className = "cal-dow";
-    h.textContent = d;
-    grid.appendChild(h);
-  });
-
-  // Empty leading cells
-  for (let i = 0; i < firstDayOfWeek; i++) {
-    const e = document.createElement("div");
-    e.className = "cal-day cal-empty";
-    grid.appendChild(e);
-  }
-
-  // Day cells
-  for (let d = 1; d <= daysInMonth; d++) {
-    const mm  = String(_calMonth).padStart(2, "0");
-    const dd  = String(d).padStart(2, "0");
-    const dateStr = `${_calYear}-${mm}-${dd}`;
-
-    const cell = document.createElement("div");
-    cell.className = "cal-day";
-    cell.textContent = d;
-
-    if (dateStr > todayStr) {
-      cell.classList.add("cal-future");
-    } else {
-      if (dateStr === todayStr) cell.classList.add("cal-today");
-      if (_calMarked.has(dateStr)) cell.classList.add("cal-marked");
-      cell.addEventListener("click", () => _toggleDay(dateStr, cell));
-    }
-
-    grid.appendChild(cell);
-  }
-}
-
-async function _toggleDay(dateStr, cell) {
-  const wasMarked = _calMarked.has(dateStr);
-  // Optimistic update
-  cell.classList.toggle("cal-marked", !wasMarked);
-  wasMarked ? _calMarked.delete(dateStr) : _calMarked.add(dateStr);
-
-  const result = await apiFetch(`/reading-log/${dateStr}`, {
-    method: wasMarked ? "DELETE" : "POST",
-  });
-
-  if (!result) {
-    // Revert on API failure
-    cell.classList.toggle("cal-marked", wasMarked);
-    wasMarked ? _calMarked.add(dateStr) : _calMarked.delete(dateStr);
-  }
-}
-
-function initCalendar() {
-  const prev = document.getElementById("cal-prev");
-  const next = document.getElementById("cal-next");
-  if (prev) prev.addEventListener("click", () => {
-    _calMonth--;
-    if (_calMonth < 1) { _calMonth = 12; _calYear--; }
-    _loadCalendar();
-  });
-  if (next) next.addEventListener("click", () => {
-    const now = new Date();
-    if (_calYear === now.getFullYear() && _calMonth === now.getMonth() + 1) return;
-    _calMonth++;
-    if (_calMonth > 12) { _calMonth = 1; _calYear++; }
-    _loadCalendar();
-  });
-  _loadCalendar();
 }
 
 // ── Header search ─────────────────────────────────────────────

@@ -106,7 +106,6 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   loadShelf();
-  initCalendar();
 
   document.getElementById("year-filter").addEventListener("change", () => {
     _yearFilter = document.getElementById("year-filter").value;

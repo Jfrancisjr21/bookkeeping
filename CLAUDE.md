@@ -119,15 +119,15 @@ Tests use a transaction-rollback fixture — each test is isolated and leaves no
 Scripts are plain (non-module) files sharing global scope. Cache-busting via `?v=N` query params — bump the version in the HTML `<script>` tag whenever the JS file changes.
 
 **Current versions:**
-- `shared.js?v=14`
+- `shared.js?v=15`
 - `browse.js?v=11`
 - `app.js?v=23`
 
 ### Reading Tracker
 `current_page` and `total_pages` on the Book model. All tracker code is wrapped in `/* ══ Reading Tracker (removable) ══ */` comment blocks for easy removal. Journal entries save to the `journal_entries` table via `POST /books/{id}/journal` and display as a list in the shelf modal. The `notes` field is free-form text, separate from journal entries.
 
-### Reading calendar
-Daily reading log stored in the `reading_log` table (unique constraint on `user_id + date`). `POST /reading-log/{date}` marks a day; `DELETE /reading-log/{date}` unmarks it. Future dates are rejected with 400. Both return `{"date": "...", "marked": bool}` (never 204) so `apiFetch` can detect failures. `initCalendar()` in shared.js renders the widget in the hamburger sidebar on both pages with optimistic UI and revert on failure.
+### Reading calendar (backend only)
+Daily reading log stored in the `reading_log` table (unique constraint on `user_id + date`). `POST /reading-log/{date}` marks a day; `DELETE /reading-log/{date}` unmarks it. Future dates rejected with 400. Both return `{"date": "...", "marked": bool}`. The frontend calendar widget has been removed — the API and tests remain in place.
 
 ### On-shelf indicator (browse page)
 `loadShelfIndex()` in browse.js fetches all user books on init and builds `_shelfIndex` keyed by `i:<isbn>` and `k:<open_library_key>`. It also derives the stats bar counts from the same response (no separate API calls). Browse cards show a green ✓ badge if the book is already on the shelf. The detail panel shows the current status instead of "Add to Shelf".

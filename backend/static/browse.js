@@ -188,7 +188,6 @@ document.addEventListener("DOMContentLoaded", async () => {
   });
 
   loadShelfIndex();
-  initCalendar();
 
   // Goal banner interactions
   const goalCount = document.getElementById("goal-count");
