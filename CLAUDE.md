@@ -10,9 +10,10 @@ Full-stack personal book tracking app. FastAPI backend, vanilla JS frontend, Pos
 # 1. Start Postgres (Docker)
 docker compose up -d db
 
-# 2. Start the API (from backend/)
+# 2. Apply migrations, then start the API (from backend/)
 cd backend
 source venv/bin/activate
+alembic upgrade head
 uvicorn main:app --reload
 ```
 
@@ -50,7 +51,8 @@ backend/
     shared.js       # Shared utils: apiFetch, checkAuth, openBookDetail, openModal, makeBookCard, showToast, initCalendar, etc.
     browse.js       # Browse page logic: genre rows, shelf index, goal banner
     app.js          # Shelf page logic: loadShelf, renderGrid, applyFilterAndSort, saveBook
-  Dockerfile        # python:3.12-slim, exposes 8000, runs uvicorn
+  Dockerfile        # python:3.12-slim, exposes 8000, runs `alembic upgrade head` then uvicorn
+  alembic/versions/ # Schema migrations — 0001 is the baseline of all existing tables
   requirements.txt  # Full pip freeze (used by Dockerfile)
 docker-compose.yml  # web + db services; web builds from backend/Dockerfile
 ```
@@ -65,28 +67,22 @@ Generate a key: `python3 -c "import secrets; print(secrets.token_hex(32))"`
 
 Connection string lives in `.env` as `DATABASE_URL` (default: `postgresql://bookkeeper:bookkeeper@localhost:5432/books`).
 
-**SQLAlchemy does not auto-add columns to existing tables.** After any model change, run ALTER TABLE manually:
-
-```bash
-psql postgresql://bookkeeper:bookkeeper@localhost:5432/books -c "ALTER TABLE books ADD COLUMN IF NOT EXISTS <col> <type>;"
-```
-
-Columns added manually so far: `current_page`, `total_pages`, `first_publish_year`, `started_reading_at`
-
-New tables (`journal_entries`, `reading_goals`, `reading_log`) are created automatically by SQLAlchemy on startup.
-
 ## Migrations (Alembic)
 
-Alembic is configured but optional — `create_all` still handles new tables on startup. Use Alembic for column additions to existing tables.
+Alembic is the only thing that changes the schema — `main.py` no longer calls `create_all`, and there are no manual `ALTER TABLE`s. The Docker image runs `alembic upgrade head` on every start, so pushing a migration to `master` applies it in production when Coolify redeploys. A failed migration stops the container rather than serving a mismatched schema.
+
+After any change to `models.py`:
 
 ```bash
 cd backend
-# Apply all migrations
-venv/bin/alembic upgrade head
-
-# Generate a new migration after a model change
-venv/bin/alembic revision --autogenerate -m "describe the change"
+venv/bin/alembic revision --autogenerate -m "describe the change"   # review the generated file in alembic/versions/
+venv/bin/alembic upgrade head                                        # apply locally
+venv/bin/alembic check                                               # "No new upgrade operations detected." = models and DB match
 ```
+
+Commit the migration file together with the model change.
+
+`0001_baseline_schema` creates every table that existed before Alembic took over. Databases that already had those tables (local and production) were marked as being at `0001` with `alembic stamp 0001` instead of running it. `0002` makes `books.user_id` NOT NULL — production had created it nullable before auth existed.
 
 ## Tests
 
@@ -138,9 +134,14 @@ Persisted in the `reading_goals` table via `GET/PUT/DELETE /goals/{year}`. `GET`
 ### Year filter (shelf)
 On the "Read" tab, a year `<select>` appears in the filter bar when there are books with `date_read` set. Filters the grid client-side from `_shelfBooks` without re-fetching.
 
+## Deployment
+
+Production is https://bookkeeping.juntopia.tech, deployed by **Coolify** on a Hostinger VPS from `master` of `github.com/Jfrancisjr21/bookkeeping` (builds `backend/Dockerfile`). Workflow: change locally → test → commit → push → Coolify redeploys. `/root/projects/bookkeeping` on the VPS is an old manual clone and is **not** what's served.
+
 ## Common gotchas
 
 - Homebrew Postgres conflicts with Docker on port 5432 — stop it with `brew services stop postgresql@<version>` before running Docker
 - `psycopg2` must be `psycopg2-binary` on Python 3.13
 - `dashboard.html`, `dashboard.js`, `home.js`, `browse.html` have been deleted — do not recreate them
+- `docker compose up` of the `web` service on Apple Silicon crashes with exit code 132 (illegal instruction in `cryptography`'s native code). Build with `--platform linux/amd64` to match the server, or run the API from the venv
 - Test DB setup command needs `-d books` flag: `psql -U bookkeeper -d books -c "CREATE DATABASE books_test;"`

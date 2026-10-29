@@ -1,10 +1,8 @@
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
-from database import engine, Base
 from routers import books, search, auth, goals, reading_log
 
-Base.metadata.create_all(bind=engine)
-
+# Schema is managed by Alembic — run `alembic upgrade head` (the Docker image does this on start)
 app = FastAPI(title="Bookkeeper")
 
 app.include_router(auth.router)
