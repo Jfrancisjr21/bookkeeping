@@ -112,9 +112,10 @@ Tests use a transaction-rollback fixture — each test is isolated and leaves no
 `GET /search/` fires Open Library + Google Books in parallel, merges and deduplicates by ISBN then title+author. OL results take priority. Google Books IDs are stored as `gb:<volumeId>` in the `open_library_key` field. `GET /search/detail` routes to the right API based on the `gb:` prefix. Both endpoints require auth.
 
 ### Frontend script loading
-Scripts are plain (non-module) files sharing global scope. Cache-busting via `?v=N` query params — bump the version in the HTML `<script>` tag whenever the JS file changes.
+Scripts are plain (non-module) files sharing global scope. Cache-busting via `?v=N` query params — bump the version in the HTML `<script>`/`<link>` tag whenever a JS or CSS file changes. `shared.js` and `shared.css` are referenced from both `index.html` and `shelf.html`; bump both.
 
 **Current versions:**
+- `shared.css?v=1`
 - `shared.js?v=15`
 - `browse.js?v=11`
 - `app.js?v=23`
